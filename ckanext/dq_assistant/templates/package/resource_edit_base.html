@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+{% block inner_primary_nav %}
+  {{ super() }}
+    {% if h.xloader_status_description(status) != 'Complete'  %}
+        {{ h.build_nav_icon('dq_assistant.resource_report', _('Data quality'), dataset_id=pkg.name, resource_id=res.id) }}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "package/resource_edit_base.html" %}
+
+{% block subtitle %}{{ h.dataset_display_name(pkg) }} - {{ h.resource_display_name(res) }}{% endblock %}
+
+{% block primary_content_inner %}
+
+  {% set action = h.url_for('xloader.resource_data', id=pkg.name, resource_id=res.id) %}
+  {% set show_table = true %}
+
+  {% block upload_ds_button %}
+    <form method="post" action="{{ action }}" class="datapusher-form">
+      <button class="btn btn-primary" name="save" type="submit">
+        <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
+      </button>
+    </form>
+  {% endblock %}
+
+    {% if report and report.get('summary') %}
+        <div class="alert alert-{{ report.get('severity', 'info') }}" role="alert">{{ report.get('summary') }}</div>
+    {% endif %}
+
+    {% if report and report.get('report', []) %}
+        <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th class="col-xs-*">Severity</th>
+                  <th class="col-lg-6">Row Text</th>
+                  <th class="col-lg-5">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for item in report.report %}
+                <tr>
+                    <td>
+                        <div class="alert alert-{{ item.get('severity', 'info') }}" style="margin-bottom: 0; padding: 10px; text-align: center;">{{ item.get('severity') }}</div>
+                    </td>
+                  <td>{{ item.get('data_row') }}</td>
+                  <td>{{ item.get('message') | urlize }}</td>
+                </tr>
+               {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+    {% endif %}
+{% endblock %}
