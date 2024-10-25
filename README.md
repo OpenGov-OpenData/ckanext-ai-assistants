@@ -11,7 +11,6 @@ Config settings
 ```ini
 # general settings
 ckan.plugins = ... dq_assistant datastore xloader ...
-ckan.dq_assistant.enable_for_sysadmins = True
 ckan.dq_assistant.enable_for_orgadmins = True
 ckan.dq_assistant.only_for_failed_xloader_jobs = True
 
@@ -32,4 +31,5 @@ ckan.openapi.frequency_penalty = int (default 0)
 ckan.openapi.presence_penalty = int (default 0)
                      
 
+ckan.openapi.redis_url = redis://redis:6379/1
 ```

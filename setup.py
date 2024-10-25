@@ -20,7 +20,7 @@ setup(
 	install_requires=[
 		'langchain',
 		'langchain-openai',
-		'openai-ratelimiter',
+		'openai-ratelimiter==0.7',
 	],
 	entry_points=\
 	"""
