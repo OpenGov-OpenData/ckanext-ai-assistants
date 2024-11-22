@@ -17,7 +17,7 @@ class DQAIPlugin(p.SingletonPlugin):
     p.implements(p.ITemplateHelpers)
     p.implements(p.IResourceController, inherit=True)
 
-    ## IConfigurer
+    # IConfigurer
     def update_config(self, config):
         log.info('You are using the following plugins: {0}'
                  .format(config.get('ckan.plugins')))

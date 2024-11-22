@@ -1,30 +1,37 @@
 from setuptools import setup, find_packages
-version = '0.1'
+
+version = '0.0.1'
 
 setup(
-	name='ckanext-ai-assistants',
-	version=version,
-	description="Quick introduction to writiing CKAN extensions",
-	long_description="""\
-	""",
-	classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-	keywords='',
-	author='Peter Vorman',
-	author_email='',
-	url='http://ckan.org',
-	license='GPL v3.0',
-	packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-	namespace_packages=['ckanext', 'ckanext.dq_assistant'],
-	include_package_data=True,
-	zip_safe=False,
-	install_requires=[
-		'langchain',
-		'langchain-openai',
-		'openai-ratelimiter==0.7',
-	],
-	entry_points=\
-	"""
-        [ckan.plugins]
-	dq_assistant=ckanext.dq_assistant.plugin:DQAIPlugin
-	""",
+    name='ckanext-ai-assistants',
+    version=version,
+    description="Quick introduction to writiing CKAN extensions",
+    long_description="""""",
+    license='AGPL',
+    classifiers=[
+        # How mature is this project? Common values are
+        # 3 - Alpha
+        # 4 - Beta
+        # 5 - Production/Stable
+        'Development Status :: 3 - Alpha',
+        'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
+        'Programming Language :: Python :: 3.9',
+    ],
+    keywords='ckan plugin',
+    author='Peter Vorman',
+    author_email='pvorman@opengov.com',
+    url='http://ckan.org',
+    packages=find_packages(exclude=['examples', 'tests']),
+    namespace_packages=['ckanext'],
+    include_package_data=True,
+    zip_safe=False,
+    install_requires=[
+        'langchain',
+        'langchain-openai',
+        'openai-ratelimiter==0.7',
+    ],
+    entry_points="""
+    [ckan.plugins]
+    dq_assistant=ckanext.dq_assistant.plugin:DQAIPlugin
+    """,
 )

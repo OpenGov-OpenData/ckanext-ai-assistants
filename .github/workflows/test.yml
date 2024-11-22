@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
+#      - uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.9'
       - name: Install requirements
         run: pip install flake8 pycodestyle bandit
       - name: Check syntax
@@ -17,7 +17,7 @@ jobs:
       - name: Run flake8
         run: flake8 . --count --max-line-length=127 --statistics --exclude ckan
       - name: Run bandit
-        run: bandit -s B101  -r ./ckanext/dq_assistant -f html -o reports/bandit.html
+        run: bandit -s B101  -r ./ckanext/dq_assistant -f screen
 
   test:
     needs: lint
@@ -25,7 +25,6 @@ jobs:
       matrix:
         ckan-version: [2.9]
       fail-fast: false
-
     name: CKAN ${{ matrix.ckan-version }}
     runs-on: ubuntu-latest
     container:
@@ -50,11 +49,13 @@ jobs:
       CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Install requirements
-      run: |
-        pip install -e .
-        # Replace default path to CKAN core config file with the one on the container
-        sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
-    - name: Run tests
-      run: pytest --ckan-ini=test.ini --cov=ckanext.dq_assistant --disable-warnings --cov-fail-under=${CODE_COVERAGE_THRESHOLD_REQUIRED} ckanext/dq_assistant/tests
+      - uses: actions/checkout@v4
+      - name: Install requirements
+        run: |
+          pip install --upgrade setuptools==70.0.0 
+          pip install --ignore-installed -e .
+        
+          # Replace default path to CKAN core config file with the one on the container
+          sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
+      - name: Run tests
+        run: pytest --ckan-ini=test.ini --cov=ckanext.dq_assistant --disable-warnings --cov-fail-under=${CODE_COVERAGE_THRESHOLD_REQUIRED} ckanext/dq_assistant/tests

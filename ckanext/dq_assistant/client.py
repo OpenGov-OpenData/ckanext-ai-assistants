@@ -8,9 +8,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from openai_ratelimiter import ChatCompletionLimiter, TextCompletionLimiter
+from openai_ratelimiter import TextCompletionLimiter
 from openai_ratelimiter.base import Limiter
-
 
 from ckan.plugins import toolkit as tk
 from common import asint
@@ -27,19 +26,18 @@ cache = redis.from_url(redis_url)
 cache_ttl = asint(tk.config.get('ckan.dq_assistant.redis_cache_ttl_days', 0)) * 24 * 60 * 60
 
 
-messages = [(message.get('role', 'system'),message.get('content', '')) for message  in prompt.get('messages', [])]
+messages = [(message.get('role', 'system'), message.get('content', '')) for message in prompt.get('messages', [])]
 messages.extend([
     MessagesPlaceholder('data', optional=False),
     MessagesPlaceholder('data_dict', optional=True),
-    MessagesPlaceholder('xloader_report', optional=True)]
-)
+    MessagesPlaceholder('xloader_report', optional=True)
+])
 
 messages_tpl = ChatPromptTemplate(messages)
-
 model_name = tk.config.get('ckan.openapi.model', "gpt-4o")
 rpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 3))
 tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 3000))
-max_tokens=asint(tk.config.get('ckan.openapi.max_tokens', 512))
+max_tokens = asint(tk.config.get('ckan.openapi.max_tokens', 512))
 client = ChatOpenAI(
     api_key=tk.config.get('ckan.openapi.api_key'),
     timeout=asint(tk.config.get('ckan.openapi.timeout', 60)),
@@ -51,6 +49,7 @@ client = ChatOpenAI(
     presence_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
     disable_streaming=True,
 )
+
 
 class AdvancedLimiter(Limiter):
     def __init__(self, user_id, model_name, max_calls, max_tokens, period, tokens, redis):
@@ -70,8 +69,6 @@ class AdvancedLimiter(Limiter):
         return self.max_tokens - self.current_tokens
 
 
-
-
 class ChatCompletionLimiterPerUser(TextCompletionLimiter):
     def __init__(self, user_id, model_name, RPM, TPM, redis_instance):
         super().__init__(model_name=model_name,  RPM=RPM, TPM=TPM, redis_instance=redis_instance)
@@ -87,6 +84,7 @@ class ChatCompletionLimiterPerUser(TextCompletionLimiter):
             tokens,
             self.redis,
         )
+
 
 def send_to_ai(data, data_dictionary=None, xloader_report=None):
     chain = messages_tpl | client
@@ -119,8 +117,10 @@ def analyze_data(resource_id, data, data_dictionary=None, xloader_report=None):
             report['cached'] = True
     return report
 
+
 def store_data(resource_id, data):
     cache.set(resource_id, data)
+
 
 def get_data(resource_id):
     try:
@@ -133,6 +133,7 @@ def get_data(resource_id):
         log.exception(exc)
         report = {}
     return report
+
 
 def remove_data(resource_id):
     cache.delete(resource_id)

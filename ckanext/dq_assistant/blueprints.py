@@ -10,15 +10,11 @@ from ckanext.dq_assistant.client import analyze_data, get_data
 
 
 log = logging.getLogger(__name__)
-
-
-
 dq_assistant = Blueprint("dq_assistant", __name__, url_prefix='/dq_assistant')
 
 
 @dq_assistant.route("/report/<dataset_id>/resource/<resource_id>",
-              methods=['GET', 'POST'], strict_slashes=False, merge_slashes=True)
-
+                    methods=['GET', 'POST'], strict_slashes=False, merge_slashes=True)
 def resource_report(dataset_id, resource_id):
     try:
         check_access('is_user_authorized_to_generate_report', context={'user': p.toolkit.c.user})
@@ -67,7 +63,7 @@ def resource_report(dataset_id, resource_id):
                 'limit': 0
             }
         )
-        fields =[ f for f in rec['fields'] if not f['id'].startswith('_')]
+        fields = [f for f in rec['fields'] if not f['id'].startswith('_')]
     except (NotFound, p.toolkit.ObjectNotFound):
         fields = []
 
@@ -75,7 +71,7 @@ def resource_report(dataset_id, resource_id):
     maximum_data_size = 5 * 1024 * 1024
     data_size = 0
     data = []
-    with requests.get(resource.get('original_url') or resource.get('url'), stream=True) as resp:
+    with requests.get(resource.get('original_url') or resource.get('url'), stream=True, timeout=30) as resp:
         for _ in range(100):
             if data_size >= maximum_data_size:
                 break

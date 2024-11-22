@@ -29,5 +29,6 @@ def user_is_sysadmin(context):
         return False
     return user_obj.sysadmin
 
+
 def user_is_authorized_to_generate_report(context, data_dict=None):
     return {'success': user_is_sysadmin(context)}
