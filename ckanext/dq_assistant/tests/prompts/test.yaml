@@ -1,0 +1,5 @@
+---
+messages:
+  - role: system
+    content: |
+        "You are a data quality assistant."
