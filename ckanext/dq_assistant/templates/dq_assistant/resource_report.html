@@ -1,22 +1,37 @@
 {% extends "package/resource_edit_base.html" %}
+{% block styles %}
+    {{ super() }}
+    {% asset 'dq-assistant/dq-css' %}
+{% endblock %}
 
 {% block subtitle %}{{ h.dataset_display_name(pkg) }} - {{ h.resource_display_name(res) }}{% endblock %}
 
 {% block primary_content_inner %}
-
-  {% set action = h.url_for('xloader.resource_data', id=pkg.name, resource_id=res.id) %}
-  {% set show_table = true %}
-
-  {% block upload_ds_button %}
-    <form method="post" action="{{ action }}" class="datapusher-form">
-      <button class="btn btn-primary" name="save" type="submit">
-        <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
-      </button>
-    </form>
-  {% endblock %}
+{% block upload_ds_button %}
+    {% if not report or not report.get('cached', False) %}
+      {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
+        <form method="post" action="{{ action }}">
+          <button class="btn btn-primary dq-assistant-btn">
+            <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
+          </button>
+        </form>
+    {% else %}
+        <button class="btn btn-primary dq-assistant-btn disabled">
+            <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
+            <i class="fa fa-question-circle icon-question-sign muted"
+               title="AI report is cached and the ability to recheck this resource will be unblocked after the new datastore upload."
+               data-bs-toggle="tooltip" data-toggle="tooltip"></i>
+          </button>
+    {% endif %}
+{% endblock %}
 
     {% if report and report.get('summary') %}
         <div class="alert alert-{{ report.get('severity', 'info') }}" role="alert">{{ report.get('summary') }}</div>
+    {% endif %}
+
+    {% if report and not report.get('cached') %}
+        <span class="label label-default">RPM left: {{ report.get('rpm_left') }}</span>
+        <span class="label label-default">TPM left: {{ report.get('tpm_left') }}</span>
     {% endif %}
 
     {% if report and report.get('report', []) %}

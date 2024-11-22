@@ -17,6 +17,8 @@ ckan.dq_assistant.only_for_failed_xloader_jobs = True
 ckan.dq_assistant.rpm_limit_per_user = int (default 3)
 ckan.dq_assistant.tpm_limit_per_user = int (default 3000)
 
+ckan.dq_assistant.redis_url = redis://redis:6379/3 (required)
+ckan.dq_assistant.redis_cache_ttl_days = int (default 1)
 
 # OpenAI settings https://python.langchain.com/api_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html#langchain_openai.chat_models.base.ChatOpenAI
 ckan.openapi.api_key = <your openai api key> (required)
@@ -29,7 +31,5 @@ ckan.openapi.temperature = float (default 0.1)
 ckan.openapi.top_p = int (default 1)
 ckan.openapi.frequency_penalty = int (default 0)
 ckan.openapi.presence_penalty = int (default 0)
-                     
-
-ckan.openapi.redis_url = redis://redis:6379/1
+  
 ```
