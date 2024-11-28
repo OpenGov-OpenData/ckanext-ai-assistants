@@ -29,6 +29,7 @@ setup(
         'langchain',
         'langchain-openai',
         'openai-ratelimiter==0.7',
+        'SQLAlchemy==1.3.24',
     ],
     entry_points="""
     [ckan.plugins]
