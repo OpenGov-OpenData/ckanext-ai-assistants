@@ -52,10 +52,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install requirements
         run: |
-          pip install --upgrade setuptools==70.0.0 pytest-ckan pytest-cov factory-boy responses mock
+          pip install --upgrade setuptools==70.0.0 
           pip install --ignore-installed -e .
           # temporary fix for compatibility
-          pip install PyYAML==6.0.1
+          pip install --ignore-installed PyYAML==6.0.1 pytest-ckan pytest-cov factory-boy responses mock
         
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini

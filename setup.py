@@ -26,9 +26,10 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'langchain',
-        'langchain-openai',
-        'openai-ratelimiter==0.7',
+        'redis',
+        'langchain>=0.0.158',
+        'langchain-openai==0.1.25',
+        'tiktoken==0.8.0',
         'SQLAlchemy==1.3.24',
     ],
     entry_points="""
