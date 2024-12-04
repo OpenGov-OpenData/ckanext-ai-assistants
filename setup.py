@@ -25,14 +25,7 @@ setup(
     namespace_packages=['ckanext'],
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        'redis',
-        'langchain==0.0.158',
-        'langchain-openai==0.1.25',
-        'tiktoken==0.8.0',
-        'SQLAlchemy==1.3.24',
-        'PyYAML==6.0.1',
-    ],
+    install_requires=[],
     entry_points="""
     [ckan.plugins]
     dq_assistant=ckanext.dq_assistant.plugin:DQAIPlugin

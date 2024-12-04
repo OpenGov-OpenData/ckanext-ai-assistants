@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-#      - uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.9'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
       - name: Install requirements
         run: pip install flake8 pycodestyle bandit
       - name: Check syntax
@@ -51,13 +51,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install requirements
-        run: |
+        run: | 
+          pip uninstall pytest
           pip install --upgrade setuptools==70.0.0 
-          
-          # temporary fix for compatibility
-          pip install --ignore-installed PyYAML==6.0.1 pytest-ckan pytest-cov factory-boy responses mock
-      
-          python3.9 setup.py install
+          pip install --ignore-installed -r dev-requirements.txt
+          pip install --ignore-installed -r requirements.txt
+          pip install -e .
           
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
