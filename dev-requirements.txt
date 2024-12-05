@@ -1,6 +1,5 @@
-pytest-ckan
 pytest-cov
 factory-boy
 responses
 mock
-pytest==4.6.11
+pytest==7.4.4
