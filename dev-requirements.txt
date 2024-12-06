@@ -1,4 +1,4 @@
-pytest-cov
-factory-boy
-responses
-mock
+pytest-cov==5.0.0
+factory-boy==3.3.1
+responses==0.25.3
+mock==5.1.0

@@ -26,9 +26,11 @@ jobs:
         ckan-version: [2.9]
       fail-fast: false
     name: CKAN ${{ matrix.ckan-version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
-      image: ckan/ckan-dev:${{ matrix.ckan-version }}
+      image: ckan/ckan-dev:2.9-py3.9
+      options: --user=root
+
     services:
       solr:
         image: ckan/ckan-solr:${{ matrix.ckan-version }}-solr9
@@ -55,9 +57,19 @@ jobs:
           pip install --upgrade setuptools==70.0.0 
           pip install --ignore-installed -r dev-requirements.txt
           pip install --ignore-installed -r requirements.txt
-          pip install -e .
-          
+          pip install --editable .
+          pip install --upgrade PyYAML==6.0.2
+          pip install --upgrade webassets==2.0.0 
+          pip freeze
+          ls -la 
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
+          
+          # Install ckanext-xloader
+          git clone --branch 0.12.2-opengov https://github.com/OpenGov-OpenData/ckanext-xloader
+          pip install -r ckanext-xloader/requirements.txt
+          pip install -e ckanext-xloader
+      - name: Setup db
+        run: ckan db init
       - name: Run tests
         run: pytest --cov=ckanext.dq_assistant --disable-warnings --cov-fail-under=${CODE_COVERAGE_THRESHOLD_REQUIRED} ckanext/dq_assistant/tests

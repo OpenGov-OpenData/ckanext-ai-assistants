@@ -12,6 +12,7 @@ from tests.helpers import FunctionalRQTestBase
 
 def _add_responses_solr_passthru():
     responses.add_passthru(tk.config.get('solr_url'))
+    responses.add_passthru('https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken')
 
 
 @pytest.mark.usefixtures('clean_db', 'with_plugins', 'with_test_worker')
@@ -29,8 +30,8 @@ class TestAction:
         res = factories.Resource(user=user, format='csv')
         resp = app.get(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
         assert resp.status_code == 403
-        assert 'Check with AI' not in resp.text
-        assert 'dq-assistant-btn' not in resp.text
+        assert 'Check with AI' not in resp
+        assert 'dq-assistant-btn' not in resp
 
     @responses.activate
     def test_get_report(self, app):
@@ -42,8 +43,8 @@ class TestAction:
         response = app.get(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
         assert 200 == response.status_code
-        assert 'Check with AI' in response.text
-        assert 'dq-assistant-btn' in response.text
+        assert 'Check with AI' in response
+        assert 'dq-assistant-btn' in response
 
     @responses.activate
     def test_generate_report_without_xloader_task_status(self, app):
@@ -57,8 +58,8 @@ class TestAction:
             response = app.post(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
             assert 200 == response.status_code
-            assert 'Check with AI' in response.text
-            assert 'dq-assistant-btn' in response.text
+            assert 'Check with AI' in response
+            assert 'dq-assistant-btn' in response
             # assert 'dq-assistant-btn disabled' not in response.text
             assert client.call_count == 1
 
@@ -74,8 +75,8 @@ class TestAction:
             response = app.post(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
             assert 200 == response.status_code
-            assert 'Check with AI' in response.text
-            assert 'dq-assistant-btn disabled' in response.text
+            assert 'Check with AI' in response
+            assert 'dq-assistant-btn disabled' in response
             assert client.call_count == 1
 
 
@@ -105,8 +106,8 @@ class TestQA(FunctionalRQTestBase):
             response = app.post(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
             assert 200 == response.status_code
-            assert 'Check with AI' in response.text
-            assert 'dq-assistant-btn disabled' in response.text
+            assert 'Check with AI' in response
+            assert 'dq-assistant-btn disabled' in response
             assert client.call_count == 1
 
     @responses.activate
@@ -130,8 +131,8 @@ class TestQA(FunctionalRQTestBase):
                                 extra_environ=env)
 
             assert 200 == response.status_code
-            assert 'Check with AI' in response.text
-            assert 'dq-assistant-btn disabled' in response.text
+            assert 'Check with AI' in response
+            assert 'dq-assistant-btn disabled' in response
             assert client.call_count == 1
             assert len(client.call_args[0][0]) == 100
 
@@ -156,7 +157,7 @@ class TestQA(FunctionalRQTestBase):
                                 extra_environ=env)
 
             assert 200 == response.status_code
-            assert 'Check with AI' in response.text
-            assert 'dq-assistant-btn disabled' in response.text
+            assert 'Check with AI' in response
+            assert 'dq-assistant-btn disabled' in response
             assert client.call_count == 1
             assert len(client.call_args[0][0]) == 44
