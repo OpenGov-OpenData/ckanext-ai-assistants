@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+{% if h.is_dq_assistant_enabled() %}
+    {% block resource_actions_inner %}
+            <li>{% link_for _('Data quality'), named_route='dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id, class_='btn btn-default', icon='rocket' %}</li>
+        {{ super() }}
+    {% endblock %}
+{% endif %}
