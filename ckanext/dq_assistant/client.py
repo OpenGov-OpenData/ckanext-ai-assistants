@@ -1,0 +1,245 @@
+import json
+import yaml
+import redis
+import logging
+import time
+import types
+import tiktoken
+
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+from typing import Optional, Type, Any, Union
+from redis.lock import Lock
+from ckan.plugins import toolkit as tk
+from ckan.common import asint
+
+from tiktoken.core import Encoding
+
+
+log = logging.getLogger(__name__)
+
+
+with open(tk.config.get('ckan.openapi.prompt_file', ''), 'r') as f:
+    prompt_file_data = f.read()
+prompt = yaml.load(prompt_file_data, Loader=yaml.SafeLoader)
+redis_url = tk.config.get('ckan.dq_assistant.redis_url')
+cache = redis.from_url(redis_url)
+cache_ttl = asint(tk.config.get('ckan.dq_assistant.redis_cache_ttl_days', 0)) * 24 * 60 * 60
+
+
+messages = [(message.get('role', 'system'), message.get('content', '')) for message in prompt.get('messages', [])]
+messages.extend([
+    MessagesPlaceholder('data', optional=False),
+    MessagesPlaceholder('data_dict', optional=True),
+    MessagesPlaceholder('xloader_report', optional=True)
+])
+
+messages_tpl = ChatPromptTemplate(messages)
+model_name = tk.config.get('ckan.openapi.model', "gpt-4o")
+rpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 3))
+tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 3000))
+max_tokens = asint(tk.config.get('ckan.openapi.max_tokens', 512))
+client = ChatOpenAI(
+    api_key=tk.config.get('ckan.openapi.api_key'),
+    timeout=asint(tk.config.get('ckan.openapi.timeout', 60)),
+    model=model_name,
+    max_tokens=max_tokens,
+    temperature=float(tk.config.get('ckan.openapi.temperature', 0.1)),
+    top_p=asint(tk.config.get('ckan.openapi.top_p', 1)),
+    frequency_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
+    presence_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
+    disable_streaming=True,
+)
+
+
+class AdvancedLimiter:
+    def __init__(
+        self,
+        user_id: str,
+        model_name: str,
+        max_calls: int,
+        max_tokens: int,
+        period: int,
+        tokens: int,
+        redis: "redis.Redis[bytes]",
+                 ):
+        self.key = "{}_{}".format(user_id, model_name)
+        self.current_calls = 0
+        self.current_tokens = 0
+        self.model_name = model_name
+        self.max_calls = max_calls
+        self.max_tokens = max_tokens
+        self.period = period
+        self.tokens = tokens
+        self.redis = redis
+
+    def __enter__(self):
+        lock = Lock(self.redis, f"{self.model_name}_lock", timeout=self.period)
+        with lock:
+            while True:
+                self.current_calls = self.redis.incr(
+                    f"{self.model_name}_api_calls", amount=1
+                )
+                if self.current_calls == 1:
+                    self.redis.expire(f"{self.model_name}_api_calls", self.period)
+                if self.current_calls <= self.max_calls:
+                    break
+                else:
+                    lock.release()  # Release the lock before sleeping
+                    time.sleep(self.period)  # wait for the limit to reset
+                    lock.acquire()
+
+            while True:
+                self.current_tokens = self.redis.incrby(
+                    f"{self.model_name}_api_tokens", self.tokens
+                )
+                if self.current_tokens == self.tokens:
+                    self.redis.expire(f"{self.model_name}_api_tokens", self.period)
+                if self.current_tokens <= self.max_tokens:
+                    break
+                else:
+                    lock.release()  # Release the lock before sleeping
+                    time.sleep(self.period)  # wait for the limit to reset
+                    lock.acquire()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[types.TracebackType],
+    ) -> Optional[bool]:
+        pass
+
+    def rpm_left(self):
+        return self.max_calls - self.current_calls
+
+    def tpm_left(self):
+        return self.max_tokens - self.current_tokens
+
+
+class ChatCompletionLimiterPerUser:
+    def __init__(self, user_id: str, model_name: str, rpm: int, tpm: int, redis_instance: "redis.Redis[bytes]"):
+        """
+        Initializer for the BaseAPILimiterRedis class.
+
+        Args:
+            model_name (str): The name of the model being limited.
+            rpm (int): The maximum number of requests per minute allowed. You can find your rate limits in your
+                       OpenAI account at https://platform.openai.com/account/rate-limits
+            tpm (int): The maximum number of tokens per minute allowed. You can find your rate limits in your
+                       OpenAI account at https://platform.openai.com/account/rate-limits
+            redis_instance (redis.Redis[bytes]): The redis instance.
+
+        Creates an instance of the BaseAPILimiterRedis with the specified parameters, and connects to a Redis server
+        at the specified host and port.
+        """
+        self.user_id = user_id
+        self.model_name = model_name
+        self.max_calls = rpm
+        self.max_tokens = tpm
+        self.period = 60
+        self.redis = redis_instance
+        try:
+            if not self.redis.ping():
+                raise ConnectionError("Redis server is not working. Ping failed.")
+        except redis.ConnectionError as e:
+            raise ConnectionError("Redis server is not running.", e)
+        try:
+            self.encoder = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            self.encoder = None
+
+    def _limit(self, tokens):
+        return AdvancedLimiter(
+            self.user_id,
+            self.model_name,
+            self.max_calls,
+            self.max_tokens,
+            self.period,
+            tokens,
+            self.redis,
+        )
+
+    def limit(self, prompt: str, max_tokens: int):
+        if not self.encoder:
+            raise ValueError("The encoder is not set.")
+        tokens = self.num_tokens_consumed_by_completion_request(
+            prompt, self.encoder, max_tokens
+        )
+        return self._limit(tokens)
+
+    @staticmethod
+    def num_tokens_consumed_by_completion_request(
+        prompt: Union[str, list[str], Any],
+        encoder: Encoding,
+        max_tokens: int = 15,
+        n: int = 1,
+    ):
+        num_tokens = n * max_tokens
+        if isinstance(prompt, str):  # Single prompt
+            num_tokens += len(encoder.encode(prompt))
+        elif isinstance(prompt, list):  # Multiple prompts
+            num_tokens *= len(prompt)
+            num_tokens += sum([len([encoder.encode(p) for p in prompt])])
+        else:
+            raise TypeError(
+                "Either a string or list of strings expected for 'prompt' field in completion request."
+            )
+
+        return num_tokens
+
+
+def send_to_ai(data, data_dictionary=None, xloader_report=None):
+    chain = messages_tpl | client
+    resp = chain.invoke({
+        'data': [HumanMessage(content=json.dumps(data))],
+        'data_dict': [HumanMessage(content=json.dumps(data_dictionary))],
+        'xloader_report': [HumanMessage(content=json.dumps(xloader_report))],
+    })
+    ai_resp_data = resp.content.replace('```', '').replace('json\n', '')
+    return ai_resp_data
+
+
+def analyze_data(resource_id, data, data_dictionary=None, xloader_report=None):
+    chat_limiter = ChatCompletionLimiterPerUser(
+        user_id=tk.c.userobj.id,
+        model_name=model_name,
+        rpm=rpm_limit_per_user,
+        tpm=tpm_limit_per_user,
+        redis_instance=cache,
+    )
+
+    report = get_data(resource_id)
+    if not report:
+        with chat_limiter.limit(prompt=prompt_file_data, max_tokens=max_tokens) as limit:
+            ai_res = send_to_ai(data, data_dictionary, xloader_report)
+            store_data(resource_id, ai_res)
+            report = json.loads(ai_res)
+            report['rpm_left'] = limit.rpm_left()
+            report['tpm_left'] = limit.tpm_left()
+            report['cached'] = True
+    return report
+
+
+def store_data(resource_id, data):
+    cache.set(resource_id, data)
+
+
+def get_data(resource_id):
+    try:
+        report = {}
+        data = cache.get(resource_id)
+        if data:
+            report = json.loads(data)
+            report['cached'] = True
+    except json.JSONDecodeError as exc:
+        log.exception(exc)
+        report = {}
+    return report
+
+
+def remove_data(resource_id):
+    cache.delete(resource_id)
