@@ -33,7 +33,7 @@ jobs:
 
     services:
       solr:
-        image: ckan/ckan-solr:${{ matrix.ckan-version }}-solr9
+        image: ckan/ckan-solr:${{ matrix.ckan-version }}-solr8
       postgres:
         image: ckan/ckan-postgres-dev:${{ matrix.ckan-version }}
         env:
@@ -59,7 +59,7 @@ jobs:
           pip install --ignore-installed -r requirements.txt
           pip install --editable .
           pip install --upgrade PyYAML==6.0.2
-          pip install --upgrade webassets==2.0.0 
+          pip install --upgrade webassets==2.0.0
           pip freeze
           ls -la 
           # Replace default path to CKAN core config file with the one on the container
