@@ -6,9 +6,6 @@ import time
 import types
 import tiktoken
 
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from typing import Optional, Type, Any, Union
 from redis.lock import Lock
@@ -16,7 +13,7 @@ from ckan.plugins import toolkit as tk
 from ckan.common import asint
 
 from tiktoken.core import Encoding
-
+from openai import OpenAI
 
 log = logging.getLogger(__name__)
 
@@ -29,28 +26,15 @@ cache = redis.from_url(redis_url)
 cache_ttl = asint(tk.config.get('ckan.dq_assistant.redis_cache_ttl_days', 0)) * 24 * 60 * 60
 
 
-messages = [(message.get('role', 'system'), message.get('content', '')) for message in prompt.get('messages', [])]
-messages.extend([
-    MessagesPlaceholder('data', optional=False),
-    MessagesPlaceholder('data_dict', optional=True),
-    MessagesPlaceholder('xloader_report', optional=True)
-])
+messages = prompt.get('messages', [])
 
-messages_tpl = ChatPromptTemplate(messages)
 model_name = tk.config.get('ckan.openapi.model', "gpt-4o")
-rpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 3))
-tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 3000))
+rpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 1))
+tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 10000))
 max_tokens = asint(tk.config.get('ckan.openapi.max_tokens', 512))
-client = ChatOpenAI(
+client = OpenAI(
     api_key=tk.config.get('ckan.openapi.api_key'),
     timeout=asint(tk.config.get('ckan.openapi.timeout', 60)),
-    model=model_name,
-    max_tokens=max_tokens,
-    temperature=float(tk.config.get('ckan.openapi.temperature', 0.1)),
-    top_p=asint(tk.config.get('ckan.openapi.top_p', 1)),
-    frequency_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
-    presence_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
-    disable_streaming=True,
 )
 
 
@@ -193,14 +177,26 @@ class ChatCompletionLimiterPerUser:
 
 
 def send_to_ai(data, data_dictionary=None, xloader_report=None):
-    chain = messages_tpl | client
-    resp = chain.invoke({
-        'data': [HumanMessage(content=json.dumps(data))],
-        'data_dict': [HumanMessage(content=json.dumps(data_dictionary))],
-        'xloader_report': [HumanMessage(content=json.dumps(xloader_report))],
-    })
-    ai_resp_data = resp.content.replace('```', '').replace('json\n', '')
-    return ai_resp_data
+    msgs = messages
+    msgs.append(
+        {
+            'role': 'user',
+            'content':  f'data={data}\ndata_dict={data_dictionary}\nxloader_report={xloader_report}',
+         }
+    )
+
+    resp = client.chat.completions.create(
+        model=model_name,
+        max_tokens=max_tokens,
+        temperature=float(tk.config.get('ckan.openapi.temperature', 0.1)),
+        top_p=asint(tk.config.get('ckan.openapi.top_p', 1)),
+        frequency_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
+        presence_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
+        messages=messages,
+        stream=False,
+    )
+    data = resp.choices[0].message.content.replace('```', '').replace('json\n', '')
+    return data
 
 
 def analyze_data(resource_id, data, data_dictionary=None, xloader_report=None):

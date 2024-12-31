@@ -3,8 +3,11 @@ from ckan.plugins import toolkit as tk
 
 
 def is_dq_assistant_enabled():
-    if not tk.c.pkg_dict.get('private', True) and not is_xloader_status_complete(tk.c.resource.get('id')):
-        return True
+    try:
+        if not tk.c.pkg_dict.get('private', True) and not is_xloader_status_complete(tk.c.resource.get('id')):
+            return True
+    except AttributeError:
+        pass
     return False
 
 
