@@ -1,0 +1,17 @@
+{% ckan_extends %}
+{% block primary_content_inner %}
+  {% block dq_assistant_button %}
+      {% if h.is_dq_assistant_enabled() %}
+        {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
+        <form method="POST" action="{{ action }}" class="mb-3 mr-3 d-inline-block">
+          {{ h.csrf_input() if 'csrf_input' in h }}
+          <button class="btn btn-default" name="save" type="submit">
+            <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
+          </button>
+        </form>
+        <div class="clear-fix mx-1 d-inline-block"></div>
+      {% endif %}
+  {% endblock %}
+  {{ super() }}
+{% endblock %}
+

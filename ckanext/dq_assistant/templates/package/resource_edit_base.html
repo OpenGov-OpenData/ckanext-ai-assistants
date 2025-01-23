@@ -1,17 +1,21 @@
 {% ckan_extends %}
-{% if h.is_dq_assistant_enabled() %}
-    {% block inner_primary_nav %}
-      {{ super() }}
+
+{% block inner_primary_nav %}
+  {{ super() }}
+    {% if h.is_dq_assistant_enabled() %}
         {{ h.build_nav_icon('dq_assistant.resource_report', _('Data quality'),
                 dataset_id=pkg.name, resource_id=res.id, icon="rocket") }}
-    {% endblock %}
-    {% block upload_ds_button %}
-        {{ super() }}
+    {% endif %}
+{% endblock %}
+
+{% block primary_content_inner %}
+    {{ super() }}
+    {% if h.is_dq_assistant_enabled() %}
       {% set action = h.url_for('dq_assistant.resource_report', id=pkg.name, resource_id=res.id) %}
-        <form method="post" action="{{ action }}" class="datapusher-form">
+        <form method="post" action="{{ action }}">
           <button class="btn btn-primary" name="save" type="submit">
             <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
           </button>
         </form>
-    {% endblock %}
-{% endif %}
+    {% endif %}
+{% endblock %}
