@@ -4,7 +4,7 @@ from ckan.plugins import toolkit as tk
 from ckanext.dq_assistant.blueprints import dq_assistant
 from ckanext.dq_assistant.utils import is_dq_assistant_enabled, user_is_authorized_to_generate_report
 from ckanext.dq_assistant.client import remove_data
-
+from ckanext.dq_assistant import db
 
 log = logging.getLogger(__name__)
 
@@ -12,10 +12,14 @@ log = logging.getLogger(__name__)
 class DQAIPlugin(p.SingletonPlugin):
 
     p.implements(p.IConfigurer)
+    p.implements(p.IConfigurable)
     p.implements(p.IBlueprint)
     p.implements(p.IAuthFunctions)
     p.implements(p.ITemplateHelpers)
     p.implements(p.IResourceController, inherit=True)
+    # IConfigurable
+    def configure(self, config):
+        db.init_db()
 
     # IConfigurer
     def update_config(self, config):

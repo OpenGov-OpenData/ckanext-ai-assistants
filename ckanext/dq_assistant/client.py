@@ -6,14 +6,17 @@ import time
 import types
 import tiktoken
 
-
 from typing import Optional, Type, Any, Union
 from redis.lock import Lock
+
+import ckan.model as model
 from ckan.plugins import toolkit as tk
 from ckan.common import asint
 
 from tiktoken.core import Encoding
 from openai import OpenAI
+from ckanext.dq_assistant import db
+
 
 log = logging.getLogger(__name__)
 
@@ -60,14 +63,14 @@ class AdvancedLimiter:
         self.redis = redis
 
     def __enter__(self):
-        lock = Lock(self.redis, f"{self.model_name}_lock", timeout=self.period)
+        lock = Lock(self.redis, f"{self.key}_lock", timeout=self.period)
         with lock:
             while True:
                 self.current_calls = self.redis.incr(
-                    f"{self.model_name}_api_calls", amount=1
+                    f"{self.key}_api_calls", amount=1
                 )
                 if self.current_calls == 1:
-                    self.redis.expire(f"{self.model_name}_api_calls", self.period)
+                    self.redis.expire(f"{self.key}_api_calls", self.period)
                 if self.current_calls <= self.max_calls:
                     break
                 else:
@@ -77,10 +80,10 @@ class AdvancedLimiter:
 
             while True:
                 self.current_tokens = self.redis.incrby(
-                    f"{self.model_name}_api_tokens", self.tokens
+                    f"{self.key}_api_tokens", self.tokens
                 )
                 if self.current_tokens == self.tokens:
-                    self.redis.expire(f"{self.model_name}_api_tokens", self.period)
+                    self.redis.expire(f"{self.key}_api_tokens", self.period)
                 if self.current_tokens <= self.max_tokens:
                     break
                 else:
@@ -181,7 +184,7 @@ def send_to_ai(data, data_dictionary=None, xloader_report=None):
     msgs.append(
         {
             'role': 'user',
-            'content':  f'data={data}\ndata_dict={data_dictionary}\nxloader_report={xloader_report}',
+            'content':  f'data={data}\ndata_dict={data_dictionary}\nxloader_report={xloader_report}\nencoding=UTF-8',
          }
     )
 
@@ -212,24 +215,33 @@ def analyze_data(resource_id, data, data_dictionary=None, xloader_report=None):
     if not report:
         with chat_limiter.limit(prompt=prompt_file_data, max_tokens=max_tokens) as limit:
             ai_res = send_to_ai(data, data_dictionary, xloader_report)
-            store_data(resource_id, ai_res)
-            report = json.loads(ai_res)
+            report = {}
             report['rpm_left'] = limit.rpm_left()
             report['tpm_left'] = limit.tpm_left()
-            report['cached'] = True
+            try:
+                report = json.loads(ai_res)
+                report['cached'] = True
+                store_data(resource_id, ai_res)
+            except json.JSONDecodeError as exc:
+                log.exception(exc)
+                report['cached'] = False
     return report
 
 
 def store_data(resource_id, data):
-    cache.set(resource_id, data)
+    report = db.DataQualityReports()
+    report.resource_id = resource_id
+    report.data = data.encode()
+    model.Session.add(report)
+    model.Session.commit()
 
 
 def get_data(resource_id):
     try:
         report = {}
-        data = cache.get(resource_id)
-        if data:
-            report = json.loads(data)
+        stored_report = db.DataQualityReports.by_resource_id(resource_id)
+        if stored_report:
+            report = json.loads(stored_report.data)
             report['cached'] = True
     except json.JSONDecodeError as exc:
         log.exception(exc)
@@ -238,4 +250,8 @@ def get_data(resource_id):
 
 
 def remove_data(resource_id):
-    cache.delete(resource_id)
+    try:
+        db.DataQualityReports.by_resource_id(resource_id).delete()
+        model.Session.commit()
+    except (tk.ObjectNotFound, AttributeError):
+        pass
