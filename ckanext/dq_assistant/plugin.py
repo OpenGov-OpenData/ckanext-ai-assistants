@@ -62,7 +62,7 @@ class DQAIPlugin(p.SingletonPlugin):
         log.info('Cache purged for {}'.format(resource.get('id')))
         remove_data(resource.get('id'))
 
-    def before_create(self, context, current, resource):
+    def before_create(self, context, resource):
         log.info('Cache purged for {}'.format(resource.get('id')))
         remove_data(resource.get('id'))
 

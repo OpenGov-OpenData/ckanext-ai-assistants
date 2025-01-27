@@ -16,7 +16,7 @@ def _add_responses_solr_passthru():
 
 
 @pytest.mark.usefixtures('clean_db', 'with_plugins', 'with_test_worker')
-@pytest.mark.ckan_config('ckan.plugins', 'datastore xloader dq_assistant')
+@pytest.mark.ckan_config('ckan.plugins', 'dq_assistant datastore xloader')
 @pytest.mark.ckan_config('ckan.openapi.prompt_file', './prompts/test.yaml')
 @pytest.mark.ckan_config('ckan.dq_assistant.redis_url', 'redis://redis:6379/3')
 @pytest.mark.ckan_config('ckan.openapi.api_key', 'it-is-openapi-token')
