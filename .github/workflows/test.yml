@@ -49,19 +49,17 @@ jobs:
       CKAN_DATASTORE_READ_URL: postgresql://datastore_read:pass@postgres/datastore_test
       CKAN_SOLR_URL: http://solr:8983/solr/ckan
       CKAN_REDIS_URL: redis://redis:6379/1
-      CKAN_INI: /__w/ckanext-ai-assistants/ckanext-ai-assistants/test.ini
     steps:
       - uses: actions/checkout@v4
       - name: Install requirements
-        run: | 
+        run: |
           pip install --upgrade setuptools==70.0.0 
           pip install --ignore-installed -r dev-requirements.txt
           pip install --ignore-installed -r requirements.txt
           pip install --editable .
           pip install --upgrade PyYAML==6.0.2
           pip install --upgrade webassets==2.0.0
-          pip freeze
-          ls -la 
+
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
           
@@ -70,6 +68,11 @@ jobs:
           pip install -r ckanext-xloader/requirements.txt
           pip install -e ckanext-xloader
       - name: Setup db
-        run: ckan db init
+        run: |
+          ckan generate config /srv/app/ckan.ini
+          ckan db init
+          ckan --config=/__w/ckanext-ai-assistants/ckanext-ai-assistants/test.ini db init
       - name: Run tests
-        run: pytest --cov=ckanext.dq_assistant --disable-warnings --cov-fail-under=${CODE_COVERAGE_THRESHOLD_REQUIRED} ckanext/dq_assistant/tests
+        run: |
+          cat /__w/ckanext-ai-assistants/ckanext-ai-assistants/test.ini > /srv/app/ckan.ini
+          pytest --cov=ckanext.dq_assistant --disable-warnings --cov-fail-under=${CODE_COVERAGE_THRESHOLD_REQUIRED} ckanext/dq_assistant/tests
