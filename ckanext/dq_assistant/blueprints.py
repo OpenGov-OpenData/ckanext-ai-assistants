@@ -1,7 +1,8 @@
 import logging
 from sys import getsizeof
 import requests
-import ckan.plugins as p
+
+from ckan import plugins as p
 from common import request
 
 from ckan.logic import NotFound, check_access
@@ -18,10 +19,10 @@ dq_assistant = Blueprint("dq_assistant", __name__, url_prefix='/dq_assistant')
 def resource_report(dataset_id, resource_id):
     try:
         check_access('is_user_authorized_to_generate_report', context={'user': p.toolkit.c.user})
-    except p.toolkit.NotAuthorized:
-        return p.toolkit.abort(403)
-    pkg_dict = p.toolkit.get_action("package_show")(None, {"id": dataset_id})
-    resource = p.toolkit.get_action("resource_show")(None, {"id": resource_id})
+        pkg_dict = p.toolkit.get_action("package_show")(None, {"id": dataset_id})
+        resource = p.toolkit.get_action("resource_show")(None, {"id": resource_id})
+    except p.toolkit.NotAuthorized as e:
+        return p.toolkit.abort(403, p.toolkit._(str(e)))
     p.toolkit.c.pkg_dict = pkg_dict
     p.toolkit.c.resource = resource
     try:

@@ -24,39 +24,13 @@
                   </button>
             {% endif %}
         {% endblock %}
-        {% if report and not report.get('cached', False)%}
+        {% if report and report.get('data') %}
             <span class="label label-default">RPM left: {{ report.get('rpm_left') }}</span>
             <span class="label label-default">TPM left: {{ report.get('tpm_left') }}</span>
             <br>
+            {{ report.get('data')|safe }}
         {% endif %}
 
-        {% if report and report.get('summary') %}
-            <div class="alert alert-{{ report.get('severity', 'info') }}" role="alert">{{ report.get('summary') }}</div>
-        {% endif %}
-        {% if report and report.get('report', []) %}
-            <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th class="col-xs-*">Severity</th>
-                      <th class="col-lg-6">Row Text</th>
-                      <th class="col-lg-5">Message</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                  {% for item in report.report %}
-                    <tr>
-                        <td>
-                            <div class="alert alert-{{ item.get('severity', 'info') }}" style="margin-bottom: 0; padding: 10px; text-align: center;">{{ item.get('severity') }}</div>
-                        </td>
-                      <td>{{ item.get('data_row') }}</td>
-                      <td>{{ item.get('message') | urlize }}</td>
-                    </tr>
-                   {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-        {% endif %}
     {% endblock %}
 {% endif %}
 

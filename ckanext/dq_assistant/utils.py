@@ -1,5 +1,6 @@
 
 from ckan.plugins import toolkit as tk
+from ckan import plugins as p
 
 
 def is_dq_assistant_enabled():
@@ -33,5 +34,26 @@ def user_is_sysadmin(context):
     return user_obj.sysadmin
 
 
-def user_is_authorized_to_generate_report(context, data_dict=None):
-    return {'success': user_is_sysadmin(context)}
+def user_is_authorized_to_generate_report(context, data_dict):
+    if not data_dict:
+        return {
+            'success': False,
+            'msg': p.toolkit._(
+                'User not authorized to use dq_assistant.')
+        }
+    if 'id' not in data_dict:
+        data_dict['id'] = data_dict.get('resource_id')
+
+    user = context.get('user')
+
+    authorized = p.toolkit.check_access('resource_update', context, data_dict)
+    if not authorized:
+        return {
+            'success': False,
+            'msg': p.toolkit._(
+                'User {0} not authorized to use dq_assistant {1}'
+                    .format(user, data_dict['id'])
+            )
+        }
+    else:
+        return {'success': True}
