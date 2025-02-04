@@ -9,28 +9,19 @@
     {% block primary_content_inner %}
         {% block dq_assistant_button %}
             {% if not report or not report.get('cached', False) %}
-              {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
+                {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
                 <form method="post" action="{{ action }}">
                   <button class="btn btn-primary dq-assistant-btn">
                     <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
                   </button>
                 </form>
-            {% else %}
-                <button class="btn btn-primary dq-assistant-btn disabled">
-                    <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
-                    <i class="fa fa-question-circle icon-question-sign muted"
-                       title="AI report is cached and the ability to recheck this resource will be unblocked after the new datastore upload."
-                       data-bs-toggle="tooltip" data-toggle="tooltip"></i>
-                  </button>
             {% endif %}
         {% endblock %}
         {% if report and report.get('data') %}
             <span class="label label-default">RPM left: {{ report.get('rpm_left') }}</span>
             <span class="label label-default">TPM left: {{ report.get('tpm_left') }}</span>
             <br>
-            {{ report.get('data')|safe }}
+            {{ report.get('data') | safe }}
         {% endif %}
-
     {% endblock %}
 {% endif %}
-

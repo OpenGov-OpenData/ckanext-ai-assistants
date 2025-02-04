@@ -20,7 +20,6 @@ redis_url = tk.config.get('ckan.dq_assistant.redis_url')
 cache = redis.from_url(redis_url)
 cache_ttl = asint(tk.config.get('ckan.dq_assistant.redis_cache_ttl_days', 0)) * 24 * 60 * 60
 
-
 messages = prompt.get('messages', [])
 
 model_name = tk.config.get('ckan.openapi.model', "gpt-4o")

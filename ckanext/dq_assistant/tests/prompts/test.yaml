@@ -2,4 +2,4 @@
 messages:
   - role: system
     content: |
-        "You are a data quality assistant."
+      "You are a data quality assistant for a CKAN Datastore integration."

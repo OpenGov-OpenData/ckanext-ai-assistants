@@ -39,6 +39,7 @@ def define_data_quality_reports():
         sa.Column('resource_id', sa.UnicodeText, sa.ForeignKey("resource.id", ondelete='CASCADE'), primary_key=True),
         sa.Column('data', sa.LargeBinary),
         sa.Column('created', sa.TIMESTAMP, server_default=sa.sql.func.now()),
+        extend_existing=True
     )
 
     mapper(DataQualityReports, data_quality_reports)
