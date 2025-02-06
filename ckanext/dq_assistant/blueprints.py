@@ -1,10 +1,9 @@
 import logging
-import requests
-from sys import getsizeof
-
 import ckan.plugins.toolkit as tk
 from flask import Blueprint, request
-from ckanext.dq_assistant.client import analyze_data, get_data
+from ckanext.dq_assistant.client import chat_limiter, get_data
+from ckan.lib.helpers import add_url_param
+from ckanext.dq_assistant.jobs import generate_report
 
 
 log = logging.getLogger(__name__)
@@ -25,27 +24,23 @@ def resource_report(dataset_id, resource_id):
 
     tk.g.pkg_dict = pkg_dict
     tk.g.resource = resource
-
-    try:
-        xloader_status = tk.get_action('xloader_status')(
-            None, {'resource_id': resource_id}
-        )
-        logs = []
-        status = 'no status'
-        if xloader_status and xloader_status.get('task_info'):
-            task_info = xloader_status.get('task_info', {})
-            logs = [line.get('message') for line in task_info.get('logs', [])]
-            status = task_info.get('status')
-        xloader_report_for_ai = {
-            'status': status,
-            'error': xloader_status.get('error'),
-            'logs': logs,
-        }
-    except tk.ObjectNotFound:
-        xloader_status = {}
-        xloader_report_for_ai = None
+    user_id = tk.c.userobj.id
+    limiter = chat_limiter.limit(user_id=user_id, prompt='', max_tokens=5)
 
     if request.method == 'GET':
+        job_details = {}
+        report = get_data(resource_id)
+        job_id = tk.request.args.get('job_id')
+        if job_id and not report:
+            job = tk.get_action('task_status_show')(None, {'id': job_id})
+            job_details = {
+                'id': job.get('id'),
+                'status': 'Pending',
+                'last_updated': job.get('created'),
+            }
+        report = get_data(resource_id)
+        report['rpm_left'] = limiter.rpm_left()
+        report['tpm_left'] = limiter.tpm_left()
         return tk.render(
             'dq_assistant/resource_report.html',
             extra_vars={
@@ -53,42 +48,13 @@ def resource_report(dataset_id, resource_id):
                 'resource_id': resource_id,
                 'resource': tk.g.resource,
                 'pkg_dict': tk.g.pkg_dict,
-                'status': xloader_status,
-                'report': get_data(resource_id),
+                'report': report,
+                'job': job_details,
             }
         )
 
-    try:
-        rec = tk.get_action('datastore_search')(
-            None, {
-                'resource_id': resource_id,
-                'limit': 0
-            }
-        )
-        fields = [f for f in rec['fields'] if not f['id'].startswith('_')]
-    except tk.ObjectNotFound:
-        fields = []
-
-    # 5 MB
-    maximum_data_size = 5 * 1024 * 1024
-    data_size = 0
-    data = []
-    with requests.get(resource.get('original_url') or resource.get('url'), stream=True, timeout=30) as resp:
-        for i in range(100):
-            if data_size >= maximum_data_size:
-                break
-            row = resp.raw.readline().decode(encoding=resp.encoding or 'utf-8')
-            if not row:
-                break
-            data.append(row)
-            data_size += getsizeof(row)
-    report = analyze_data(resource_id=resource_id, data=data, xloader_report=xloader_report_for_ai, data_dictionary=fields)
-    return tk.render(
-        'dq_assistant/resource_report.html',
-        extra_vars={
-            'status': xloader_status,
-            'resource': tk.g.resource,
-            'pkg_dict': tk.g.pkg_dict,
-            'report': report,
-        }
-    )
+    job = tk.enqueue_job(generate_report, args=(resource_id, user_id), title=resource_id, rq_kwargs={'timeout': 120})
+    redirect_to = tk.url_for('dq_assistant.resource_report', dataset_id=dataset_id, resource_id=resource_id)
+    redirect_url = add_url_param(redirect_to, new_params={'job_id': job.id})
+    tk.h.flash_success(tk._('Report generation will start shortly. Refresh this page for updates.'))
+    return tk.redirect_to(redirect_url)

@@ -18,19 +18,23 @@ with open(tk.config.get('ckan.openapi.prompt_file', ''), 'r') as f:
 prompt = yaml.load(prompt_file_data, Loader=yaml.SafeLoader)
 redis_url = tk.config.get('ckan.dq_assistant.redis_url')
 cache = redis.from_url(redis_url)
-cache_ttl = asint(tk.config.get('ckan.dq_assistant.redis_cache_ttl_days', 0)) * 24 * 60 * 60
 
 messages = prompt.get('messages', [])
 
-model_name = tk.config.get('ckan.openapi.model', "gpt-4o")
+model_name = tk.config.get('ckan.openapi.model', 'gpt-4o')
 rpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 1))
-tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 10000))
+tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 1000))
 max_tokens = asint(tk.config.get('ckan.openapi.max_tokens', 512))
 client = OpenAI(
     api_key=tk.config.get('ckan.openapi.api_key'),
     timeout=asint(tk.config.get('ckan.openapi.timeout', 60)),
 )
-
+chat_limiter = ChatCompletionLimiterPerUser(
+        model_name=model_name,
+        rpm=rpm_limit_per_user,
+        tpm=tpm_limit_per_user,
+        redis_instance=cache,
+    )
 
 def send_to_ai(data, data_dictionary=None, xloader_report=None):
     msgs = messages
@@ -55,15 +59,9 @@ def send_to_ai(data, data_dictionary=None, xloader_report=None):
     return data
 
 
-def analyze_data(resource_id, data, data_dictionary=None, xloader_report=None):
-    chat_limiter = ChatCompletionLimiterPerUser(
-        user_id=tk.c.userobj.id,
-        model_name=model_name,
-        rpm=rpm_limit_per_user,
-        tpm=tpm_limit_per_user,
-        redis_instance=cache,
-    )
-    lock = chat_limiter.limit(prompt=prompt_file_data, max_tokens=max_tokens)
+
+def analyze_data(resource_id, data, user_id, data_dictionary=None, xloader_report=None):
+    lock = chat_limiter.limit(user_id=user_id, prompt=prompt_file_data, max_tokens=max_tokens)
     report = get_data(resource_id)
     if not report:
         with lock:
