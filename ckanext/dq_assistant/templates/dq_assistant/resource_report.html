@@ -8,7 +8,7 @@
 {% if h.is_dq_assistant_enabled() %}
     {% block primary_content_inner %}
         {% block dq_assistant_button %}
-            {% if job and not report or not report.get('cached', False)  %}
+            {% if 'data' not in report %}
                 {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
                 <form method="post" action="{{ action }}">
                   <button class="btn btn-primary dq-assistant-btn">
@@ -28,7 +28,7 @@
             </colgroup>
             <tr>
               <th>{{ _('Status') }}</th>
-              <td>{{ job.get('status', 'unknown') }}</td>
+              <td>{{ job.get('state', 'unknown') }}</td>
             </tr>
             <tr>
               <th>{{ _('Last updated') }}</th>

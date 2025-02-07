@@ -36,6 +36,7 @@ chat_limiter = ChatCompletionLimiterPerUser(
         redis_instance=cache,
     )
 
+
 def send_to_ai(data, data_dictionary=None, xloader_report=None):
     msgs = messages
     msgs.append(
@@ -59,7 +60,6 @@ def send_to_ai(data, data_dictionary=None, xloader_report=None):
     return data
 
 
-
 def analyze_data(resource_id, data, user_id, data_dictionary=None, xloader_report=None):
     lock = chat_limiter.limit(user_id=user_id, prompt=prompt_file_data, max_tokens=max_tokens)
     report = get_data(resource_id)
@@ -67,7 +67,6 @@ def analyze_data(resource_id, data, user_id, data_dictionary=None, xloader_repor
         with lock:
             report = dict()
             report['data'] = send_to_ai(data, data_dictionary, xloader_report)
-            report['cached'] = True
             store_data(resource_id, report['data'])
     report['rpm_left'] = lock.rpm_left()
     report['tpm_left'] = lock.tpm_left()
@@ -87,7 +86,6 @@ def get_data(resource_id):
     stored_report = db.DataQualityReports.by_resource_id(resource_id)
     if stored_report:
         report['data'] = stored_report.data.decode()
-        report['cached'] = True
     return report
 
 
