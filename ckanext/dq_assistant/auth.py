@@ -2,11 +2,6 @@ import ckan.plugins.toolkit as tk
 
 
 def dq_assistant_submit(context, data_dict):
-    if not data_dict:
-        return {
-            'success': False,
-            'msg': tk._('User not authorized to use Data Quality Assistant')
-        }
     if 'id' not in data_dict:
         data_dict['id'] = data_dict.get('resource_id')
 

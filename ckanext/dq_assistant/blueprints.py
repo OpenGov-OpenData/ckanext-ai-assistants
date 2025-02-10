@@ -13,7 +13,7 @@ dq_assistant = Blueprint('dq_assistant', __name__, url_prefix='/dq_assistant')
                     methods=['GET', 'POST'], strict_slashes=False, merge_slashes=True)
 def resource_report(dataset_id, resource_id):
     try:
-        tk.check_access('dq_assistant_submit', context={'user': tk.g.user})
+        tk.check_access('dq_assistant_submit',  context={'user': tk.g.user}, data_dict={'id': resource_id})
         pkg_dict = tk.get_action('package_show')(None, {'id': dataset_id})
         resource = tk.get_action('resource_show')(None, {'id': resource_id})
         report = get_data(resource_id)
