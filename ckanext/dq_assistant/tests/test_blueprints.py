@@ -113,13 +113,15 @@ class TestQA(FunctionalRQTestBase):
         jobs.Worker().work(burst=True)
 
         with mock.patch('ckanext.dq_assistant.client.send_to_ai', return_value='{}') as client:
-            post_response = app.post(f'/dq_assistant/report/{dataset["id"]}/resource/{res.get("id")}',
+            url = tk.url_for('dq_assistant.resource_report', dataset_id=dataset["id"], resource_id=res.get("id"))
+            post_response = app.post(url,
                                      extra_environ=env,
                                      follow_redirects=False)
             jobs.Worker().work(burst=True)
             assert 302 == post_response.status_code
+            assert url in post_response.location
 
-            get_response = app.get(post_response.location, extra_environ=env)
+            get_response = app.get(url, extra_environ=env)
             assert 'Check with AI' not in get_response
             assert 'dq-assistant-btn' not in get_response
             assert client.call_count == 1
@@ -143,13 +145,15 @@ class TestQA(FunctionalRQTestBase):
         jobs.Worker().work(burst=True)
 
         with mock.patch('ckanext.dq_assistant.client.send_to_ai', return_value='{}') as client:
-            post_response = app.post(f'/dq_assistant/report/{dataset["id"]}/resource/{res.get("id")}',
+            url = tk.url_for('dq_assistant.resource_report', dataset_id=dataset["id"], resource_id=res.get("id"))
+            post_response = app.post(url,
                                      extra_environ=env,
                                      follow_redirects=False)
             jobs.Worker().work(burst=True)
             assert 302 == post_response.status_code
+            assert url in post_response.location
 
-            get_response = app.get(post_response.location, extra_environ=env)
+            get_response = app.get(url, extra_environ=env)
             assert 'Check with AI' not in get_response
             assert 'dq-assistant-btn' not in get_response
             assert client.call_count == 1
@@ -174,13 +178,15 @@ class TestQA(FunctionalRQTestBase):
         jobs.Worker().work(burst=True)
 
         with mock.patch('ckanext.dq_assistant.client.send_to_ai', return_value='{}') as client:
-            post_response = app.post(f'/dq_assistant/report/{dataset["id"]}/resource/{res.get("id")}',
+            url = tk.url_for('dq_assistant.resource_report', dataset_id=dataset["id"], resource_id=res.get("id"))
+            post_response = app.post(url,
                                      extra_environ=env,
                                      follow_redirects=False)
             jobs.Worker().work(burst=True)
             assert 302 == post_response.status_code
+            assert url in post_response.location
 
-            get_response = app.get(post_response.location, extra_environ=env)
+            get_response = app.get(url, extra_environ=env)
             assert 'Check with AI' not in get_response
             assert 'dq-assistant-btn' not in get_response
             assert client.call_count == 1
