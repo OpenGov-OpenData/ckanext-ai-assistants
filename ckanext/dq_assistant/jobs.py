@@ -1,9 +1,10 @@
 import logging
 import datetime
-from sys import getsizeof
 import requests
+from sys import getsizeof
+
+import ckan.plugins.toolkit as tk
 from ckanext.dq_assistant.client import analyze_data
-from ckan.plugins import toolkit as tk
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ def generate_report(resource_id, user_id):
         'key': 'dq_assistant',
         'value': resource_id,
     }
-    tk.get_action('task_status_update')(context, task)
+    task_status = tk.get_action('task_status_update')(context, task)
 
     try:
         xloader_status = tk.get_action('xloader_status')(
@@ -35,8 +36,9 @@ def generate_report(resource_id, user_id):
             'error': xloader_status.get('error'),
             'logs': logs,
         }
-    except tk.ObjectNotFound:
+    except (tk.ObjectNotFound, tk.NotAuthorized):
         xloader_report_for_ai = None
+
     try:
         rec = tk.get_action('datastore_search')(
             context, {
@@ -45,15 +47,16 @@ def generate_report(resource_id, user_id):
             }
         )
         fields = [f for f in rec['fields'] if not f['id'].startswith('_')]
-    except tk.ObjectNotFound:
+    except (tk.ObjectNotFound, tk.NotAuthorized):
         fields = []
+
     try:
         # 5 MB =
         maximum_data_size = 5 * 1024 * 1024
         data_size = 0
         data = []
         resource = tk.get_action('resource_show')(context, {'id': resource_id})
-        with requests.get(resource.get('original_url') or resource.get('url'), stream=True, timeout=30) as resp:
+        with requests.get(resource.get('original_url') or resource.get('url'), stream=True, timeout=60) as resp:
             for _ in range(100):
                 if data_size >= maximum_data_size:
                     break
@@ -69,15 +72,15 @@ def generate_report(resource_id, user_id):
             xloader_report=xloader_report_for_ai,
             data_dictionary=fields
         )
-        task.update({
+        task_status.update({
             'last_updated': str(datetime.datetime.utcnow()),
             'state': 'finished',
         })
     except Exception as ex:
-        task.update({
+        task_status.update({
             'last_updated': str(datetime.datetime.utcnow()),
             'state': 'failed',
             'error': str(ex)
         })
-    tk.get_action('task_status_update')(context, task)
+    tk.get_action('task_status_update')(context, task_status)
     return True

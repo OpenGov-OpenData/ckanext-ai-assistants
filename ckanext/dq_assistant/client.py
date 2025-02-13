@@ -1,14 +1,13 @@
 import yaml
 import redis
 import logging
+from openai import OpenAI
 
 import ckan.model as model
-from ckan.plugins import toolkit as tk
-from ckan.common import asint
-
-from openai import OpenAI
+import ckan.plugins.toolkit as tk
 from ckanext.dq_assistant import db
 from ckanext.dq_assistant.limiter import ChatCompletionLimiterPerUser
+
 
 log = logging.getLogger(__name__)
 
@@ -22,19 +21,19 @@ cache = redis.from_url(redis_url)
 messages = prompt.get('messages', [])
 
 model_name = tk.config.get('ckan.openapi.model', 'gpt-4o')
-rpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 1))
-tpm_limit_per_user = asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 1000))
-max_tokens = asint(tk.config.get('ckan.openapi.max_tokens', 512))
+rpm_limit_per_user = tk.asint(tk.config.get('ckan.dq_assistant.rpm_limit_per_user', 1))
+tpm_limit_per_user = tk.asint(tk.config.get('ckan.dq_assistant.tpm_limit_per_user', 1000))
+max_tokens = tk.asint(tk.config.get('ckan.openapi.max_tokens', 512))
 client = OpenAI(
     api_key=tk.config.get('ckan.openapi.api_key'),
-    timeout=asint(tk.config.get('ckan.openapi.timeout', 60)),
+    timeout=tk.asint(tk.config.get('ckan.openapi.timeout', 60))
 )
 chat_limiter = ChatCompletionLimiterPerUser(
-        model_name=model_name,
-        rpm=rpm_limit_per_user,
-        tpm=tpm_limit_per_user,
-        redis_instance=cache,
-    )
+    model_name=model_name,
+    rpm=rpm_limit_per_user,
+    tpm=tpm_limit_per_user,
+    redis_instance=cache
+)
 
 
 def send_to_ai(data, data_dictionary=None, xloader_report=None):
@@ -50,9 +49,9 @@ def send_to_ai(data, data_dictionary=None, xloader_report=None):
         model=model_name,
         max_tokens=max_tokens,
         temperature=float(tk.config.get('ckan.openapi.temperature', 0.1)),
-        top_p=asint(tk.config.get('ckan.openapi.top_p', 1)),
-        frequency_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
-        presence_penalty=asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
+        top_p=tk.asint(tk.config.get('ckan.openapi.top_p', 1)),
+        frequency_penalty=tk.asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
+        presence_penalty=tk.asint(tk.config.get('ckan.openapi.presence_penalty', 0)),
         messages=messages,
         stream=False,
     )
@@ -93,5 +92,13 @@ def remove_data(resource_id):
     try:
         db.DataQualityReports.by_resource_id(resource_id).delete()
         model.Session.commit()
+        existing_task = tk.get_action('task_status_show')({'ignore_auth': True}, {
+            'entity_id': resource_id,
+            'entity_type': 'resource',
+            'task_type': 'dq_assistant',
+            'key': 'dq_assistant'
+        })
+        if existing_task:
+            tk.get_action('task_status_delete')({'ignore_auth': True}, existing_task)
     except (tk.ObjectNotFound, AttributeError):
         pass
