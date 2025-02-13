@@ -1,38 +1,41 @@
 {% extends "package/resource_edit_base.html" %}
+
 {% block styles %}
     {{ super() }}
     {% asset 'dq-assistant/dq-css' %}
 {% endblock %}
 
 {% block subtitle %}{{ h.dataset_display_name(pkg) }} - {{ h.resource_display_name(res) }}{% endblock %}
-{% if h.is_dq_assistant_enabled() %}
-    {% block primary_content_inner %}
+
+{% block primary_content_inner %}
+    {% if h.is_dq_assistant_enabled(pkg, res) %}
         {% block dq_assistant_button %}
             {% if 'data' not in report %}
                 {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
                 <form method="post" action="{{ action }}">
-                  <button class="btn btn-primary dq-assistant-btn">
-                    <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
-                    <i class="fa fa-question-circle icon-question-sign muted"
-                       title="AI report will be cached and the ability to recheck this resource will be available after the new datastore upload."
-                       data-bs-toggle="tooltip" data-toggle="tooltip"></i>
-                  </button>
+                    <button class="btn btn-primary dq-assistant-btn">
+                        <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
+                        <i class="fa fa-question-circle icon-question-sign muted"
+                           title="AI report will be cached and the ability to recheck this resource will be available after the new datastore upload."
+                           data-bs-toggle="tooltip"
+                           data-toggle="tooltip"></i>
+                    </button>
                 </form>
             {% endif %}
         {% endblock %}
         {% if job %}
             <table class="table table-bordered">
             <colgroup>
-              <col width="150">
-              <col>
+                <col width="150">
+                <col>
             </colgroup>
             <tr>
-              <th>{{ _('Status') }}</th>
-              <td>{{ job.get('state', 'unknown') }}</td>
+                <th>{{ _('Status') }}</th>
+                <td>{{ job.get('state', 'unknown') }}</td>
             </tr>
             <tr>
-              <th>{{ _('Last updated') }}</th>
-              <td><span class="date" title="{{ h.render_datetime(job.get('last_updated'), with_hours=True) or 'Never' }}">{{ h.time_ago_from_timestamp(job.get('last_updated')) or 'Never' }}</span></td>
+                <th>{{ _('Last updated') }}</th>
+                <td><span class="date" title="{{ h.render_datetime(job.get('last_updated'), with_hours=True) or 'Never' }}">{{ h.time_ago_from_timestamp(job.get('last_updated')) or 'Never' }}</span></td>
             </tr>
           </table>
         {% endif %}
@@ -42,5 +45,5 @@
             <br>
             {{ report.get('data') | safe }}
         {% endif %}
-    {% endblock %}
-{% endif %}
+    {% endif %}
+{% endblock %}

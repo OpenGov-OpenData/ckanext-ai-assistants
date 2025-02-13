@@ -2,8 +2,8 @@
 
 {% block inner_primary_nav %}
   {{ super() }}
-  {% if h.is_dq_assistant_enabled() %}
+  {% if h.is_dq_assistant_enabled(pkg, res) %}
     {{ h.build_nav_icon('dq_assistant.resource_report', _('Data quality'),
-      dataset_id=pkg.name, resource_id=res.id, icon='rocket') }}
+       dataset_id=pkg.name, resource_id=res.id, icon='rocket') }}
   {% endif %}
 {% endblock %}

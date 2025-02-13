@@ -89,8 +89,8 @@ def resource_report(dataset_id, resource_id):
         extra_vars={
             'dataset_id': dataset_id,
             'resource_id': resource_id,
-            'resource': tk.g.resource,
             'pkg_dict': tk.g.pkg_dict,
+            'resource': tk.g.resource,
             'report': report,
             'job': task_status,
         }

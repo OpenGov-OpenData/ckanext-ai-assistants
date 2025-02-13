@@ -1,9 +1,9 @@
 import ckan.plugins.toolkit as tk
 
 
-def is_dq_assistant_enabled():
+def is_dq_assistant_enabled(pkg_dict, resource):
     try:
-        if not tk.g.pkg_dict.get('private', True) and is_xloader_status_error(tk.g.resource.get('id')):
+        if not pkg_dict.get('private', True) and is_xloader_status_error(resource.get('id')):
             return True
     except AttributeError:
         pass
