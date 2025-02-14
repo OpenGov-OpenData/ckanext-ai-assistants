@@ -44,6 +44,13 @@ class TestAction:
         dataset = factories.Dataset(owner_org=org['id'])
         res = factories.Resource(user=user, format='csv', package_id=dataset['id'])
 
+        helpers.call_action(
+            "xloader_submit",
+            context=dict(user=user["name"]),
+            resource_id=res["id"],
+        )
+        jobs.Worker().work(burst=True)
+
         response = app.get(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
         assert 200 == response.status_code
