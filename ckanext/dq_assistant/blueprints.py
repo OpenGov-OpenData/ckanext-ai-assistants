@@ -38,7 +38,7 @@ def resource_report(dataset_id, resource_id):
                 'task_type': 'dq_assistant',
                 'key': 'dq_assistant',
             })
-            if existing_task.get('state') == 'started':
+            if existing_task.get('state') == 'running':
                 assume_task_stale_after = datetime.timedelta(seconds=int(30))
                 updated = parse_iso_date(existing_task['last_updated'])
                 time_since_last_updated = datetime.datetime.utcnow() - updated
