@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 def generate_report(resource_id, user_id):
-    logger.info('Started generating report.')
+    logger.info('Starting data quality report generation.')
     context = {'ignore_auth': True}
     task = {
         'entity_id': resource_id,
         'entity_type': 'resource',
         'task_type': 'dq_assistant',
         'last_updated': str(datetime.datetime.utcnow()),
-        'state': 'started',
+        'state': 'running',
         'key': 'dq_assistant',
         'value': resource_id,
     }
@@ -51,11 +51,12 @@ def generate_report(resource_id, user_id):
         fields = []
 
     try:
-        # 5 MB =
+        # 5 MB
         maximum_data_size = 5 * 1024 * 1024
         data_size = 0
         data = []
         resource = tk.get_action('resource_show')(context, {'id': resource_id})
+        logger.info('Fetching data from: {0}'.format(resource.get('url')))
         with requests.get(resource.get('original_url') or resource.get('url'), stream=True, timeout=60) as resp:
             for _ in range(100):
                 if data_size >= maximum_data_size:
@@ -65,6 +66,7 @@ def generate_report(resource_id, user_id):
                     break
                 data.append(row)
                 data_size += getsizeof(row)
+        logger.info('Prepared data for AI processing.')
         analyze_data(
             resource_id=resource_id,
             data=data,
@@ -72,14 +74,16 @@ def generate_report(resource_id, user_id):
             xloader_report=xloader_report_for_ai,
             data_dictionary=fields
         )
+        logger.info('Report generation completed.')
         task_status.update({
             'last_updated': str(datetime.datetime.utcnow()),
-            'state': 'finished',
+            'state': 'complete',
         })
     except Exception as ex:
+        logger.exception('Exception occurred while generating report.')
         task_status.update({
             'last_updated': str(datetime.datetime.utcnow()),
-            'state': 'failed',
+            'state': 'error',
             'error': str(ex)
         })
     tk.get_action('task_status_update')(context, task_status)
