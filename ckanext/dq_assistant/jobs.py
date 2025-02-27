@@ -65,6 +65,7 @@ def generate_report(resource_id, user_id):
                     break
                 data.append(row)
                 data_size += getsizeof(row)
+        logger.info('Prepared data for AI processing')
         analyze_data(
             resource_id=resource_id,
             data=data,
@@ -77,6 +78,7 @@ def generate_report(resource_id, user_id):
             'state': 'finished',
         })
     except Exception as ex:
+        logger.exception('Exception occurred while generating report.')
         task_status.update({
             'last_updated': str(datetime.datetime.utcnow()),
             'state': 'failed',
