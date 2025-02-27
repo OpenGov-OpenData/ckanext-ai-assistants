@@ -99,6 +99,7 @@ def remove_data(resource_id):
             'key': 'dq_assistant'
         })
         if existing_task:
+            log.info('Deleted data quality report for resource {}'.format(resource_id))
             tk.get_action('task_status_delete')({'ignore_auth': True}, existing_task)
     except (tk.ObjectNotFound, AttributeError):
         pass
