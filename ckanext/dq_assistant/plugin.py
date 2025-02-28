@@ -57,16 +57,13 @@ class DQAIPlugin(p.SingletonPlugin):
         return [dq_assistant]
 
     # IResourceController
-    def before_update(self, context, current, resource):
-        log.info('Cache purged for {}'.format(resource.get('id')))
-        remove_data(resource.get('id'))
-
-    def before_delete(self, context, current, resource):
-        log.info('Cache purged for {}'.format(resource.get('id')))
-        remove_data(resource.get('id'))
-
     def before_create(self, context, resource):
-        log.info('Cache purged for {}'.format(resource.get('id')))
+        remove_data(resource.get('id'))
+
+    def before_update(self, context, current, resource):
+        remove_data(resource.get('id'))
+
+    def before_delete(self, context, resource, resources):
         remove_data(resource.get('id'))
 
     # ITemplateHelpers
