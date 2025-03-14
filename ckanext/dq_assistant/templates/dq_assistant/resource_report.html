@@ -47,3 +47,26 @@
         {% endif %}
     {% endif %}
 {% endblock %}
+{% block secondary_content %}
+    {{ super() }}
+    <div class="module context-info">
+      <div class="module-content">
+        {% block page_title %}
+          <h1 class="heading">Description</h1>
+        {% endblock %}
+        {% block resource_info %}
+          <div class="nums">
+            This AI assistant reviews the provided data (along with any data dictionary and xloader report) to ensure it meets CKAN Datastore requirements.
+            <br>
+            It checks that:
+                <ul>
+                    <li>columns are valid and consistent (no reserved names, correct number of columns, unique headers);</li>
+                    <li>verifies proper CSV formatting (RFC 4180, UTF-8 encoding);</li>
+                    <li>validates data types against the data dictionary.</li>
+                </ul>
+            If errors are found, it references xloader logs and outputs a structured HTML report detailing the issues and offering recommendations.
+          </div>
+        {% endblock %}
+      </div>
+    </div>
+{% endblock %}
