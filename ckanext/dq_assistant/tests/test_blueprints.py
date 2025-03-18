@@ -32,7 +32,7 @@ class TestAction:
         res = factories.Resource(user=user, format='csv', package_id=dataset['id'])
         resp = app.get(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
         assert resp.status_code == 403
-        assert 'Check with AI' not in resp
+        assert 'Analyze with AI' not in resp
         assert 'dq-assistant-btn' not in resp
 
     @responses.activate
@@ -54,7 +54,7 @@ class TestAction:
         response = app.get(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
         assert 200 == response.status_code
-        assert 'Check with AI' in response
+        assert 'Analyze with AI' in response
         assert 'dq-assistant-btn' in response
 
     @responses.activate
@@ -71,7 +71,7 @@ class TestAction:
             response = app.post(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
             assert 403 == response.status_code
-            assert 'Check with AI' not in response
+            assert 'Analyze with AI' not in response
             assert 'dq-assistant-btn' not in response
             # assert 'dq-assistant-btn disabled' not in response.text
             assert client.call_count == 0
@@ -90,7 +90,7 @@ class TestAction:
             response = app.post(f'/dq_assistant/report/{res.get("package_id")}/resource/{res.get("id")}', extra_environ=env)
 
             assert 403 == response.status_code
-            assert 'Check with AI' not in response
+            assert 'Analyze with AI' not in response
             assert 'dq-assistant-btn disabled' not in response
             assert client.call_count == 0
 
@@ -129,7 +129,7 @@ class TestQA(FunctionalRQTestBase):
             assert url in post_response.location
 
             get_response = app.get(url, extra_environ=env)
-            assert 'Check with AI' not in get_response
+            assert 'Analyze with AI' not in get_response
             assert 'dq-assistant-btn' not in get_response
             assert client.call_count == 1
 
@@ -161,7 +161,7 @@ class TestQA(FunctionalRQTestBase):
             assert url in post_response.location
 
             get_response = app.get(url, extra_environ=env)
-            assert 'Check with AI' not in get_response
+            assert 'Analyze with AI' not in get_response
             assert 'dq-assistant-btn' not in get_response
             assert client.call_count == 1
             assert len(client.call_args[0][0]) == 100
@@ -194,7 +194,7 @@ class TestQA(FunctionalRQTestBase):
             assert url in post_response.location
 
             get_response = app.get(url, extra_environ=env)
-            assert 'Check with AI' not in get_response
+            assert 'Analyze with AI' not in get_response
             assert 'dq-assistant-btn' not in get_response
             assert client.call_count == 1
             assert len(client.call_args[0][0]) == 44

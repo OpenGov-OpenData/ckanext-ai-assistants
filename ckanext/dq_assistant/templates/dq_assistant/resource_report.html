@@ -14,9 +14,9 @@
                 {% set action = h.url_for('dq_assistant.resource_report', dataset_id=pkg.name, resource_id=res.id) %}
                 <form method="post" action="{{ action }}">
                     <button class="btn btn-primary dq-assistant-btn">
-                        <i class="fa fa-rocket"></i> {{ _('Check with AI') }}
+                        <i class="fa fa-rocket"></i> {{ _('Analyze with AI') }}
                         <i class="fa fa-question-circle icon-question-sign muted"
-                           title="AI report will be cached and the ability to recheck this resource will be available after the new datastore upload."
+                           title="AI report will be cached and the ability to analyze this resource will be available after a new datastore upload."
                            data-bs-toggle="tooltip"
                            data-toggle="tooltip"></i>
                     </button>
@@ -46,4 +46,21 @@
             {{ report.get('data') | safe }}
         {% endif %}
     {% endif %}
+{% endblock %}
+{% block secondary_content %}
+    {{ super() }}
+    <div class="module module-narrow module-shallow">
+        <h2 class="module-heading">Datastore Error Analysis</h2>
+        <div class="module-content">
+            <p>This AI assistant helps ensure resources meet CKAN Datastore upload requirements by analyzing errors found in the resource data.</p>
+            <h3 class="heading">How It Works</h3>
+            <ul style="padding-inline-start: 15px;">
+                <li>When a resource is uploaded to the CKAN Datastore, it is processed in a background job.</li>
+                <li>If issues occur (e.g. invalid formats, invalid headers, missing values, or structural inconsistencies), error logs are generated.</li>
+                <li>These errors are analyzed using AI, generating a structured HTML report detailing possible issues and offering recommendations.</li>
+            </ul>
+            <h3 class="heading">Why Use This?</h3>
+            <p>By leveraging AI to analyze errors, dataset publishers can quickly identify and resolve issues, ensuring high data quality.</p>
+      </div>
+    </div>
 {% endblock %}
