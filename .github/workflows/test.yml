@@ -23,10 +23,10 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        ckan-version: [2.9]
+        ckan-version: [2.9, 2.11]
       fail-fast: false
     name: CKAN ${{ matrix.ckan-version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container:
       image: ckan/ckan-dev:2.9-py3.9
       options: --user=root

@@ -2,6 +2,7 @@ import logging
 
 import sqlalchemy as sa
 
+from ckan.model import ensure_engine
 from ckan.model.meta import metadata, mapper, Session
 from ckan.model.domain_object import DomainObject
 
@@ -14,12 +15,13 @@ data_quality_reports = None
 
 
 def init_db():
+    engine = ensure_engine()
     if data_quality_reports is None:
         define_data_quality_reports()
         log.debug('DataQualityReports table defined in memory')
 
-    if not data_quality_reports.exists():
-        data_quality_reports.create(checkfirst=True)
+    if not data_quality_reports.exists(engine):
+        data_quality_reports.create(engine, checkfirst=True)
         log.debug('data_quality_reports table created')
     else:
         log.debug('data_quality_reports table already exist')
